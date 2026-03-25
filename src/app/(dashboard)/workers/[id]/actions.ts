@@ -23,7 +23,8 @@ export async function getWorkerDetails(workerId: number, page: number = 1, limit
 
   if (worker.workerConfig.isSimulation) {
     phaseRepo = db.getRepository(BotPhaseSimulation);
-    orderRepo = db.getRepository(BotOrderSimulation); // Assuming orders are stored in the same table for both real and simulation
+    orderRepo = db.getRepository(BotOrderSimulation);
+  }
 
   // Fetch paginated phases
   const [phases, total] = await phaseRepo.findAndCount({

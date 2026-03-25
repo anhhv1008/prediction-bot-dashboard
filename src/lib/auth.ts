@@ -26,7 +26,7 @@ export async function setAuthCookie(token: string) {
   const cookieStore = await cookies();
   cookieStore.set("dashboard_token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: false, // Set to true in production with HTTPS
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24, // 1 day

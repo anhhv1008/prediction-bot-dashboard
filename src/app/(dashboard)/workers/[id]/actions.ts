@@ -4,12 +4,26 @@ import { initializeDB } from "@/database/DataSource";
 import { BotPhase } from "@/database/entities/BotPhase";
 import { BotOrder } from "@/database/entities/BotOrder";
 import BigNumber from "bignumber.js";
-import { MoreThanOrEqual } from "typeorm";
+import { MoreThanOrEqual, Repository } from "typeorm";
+import { BotWorker } from "@/database/entities/BotWorker";
+import { BotPhaseSimulation } from "@/database/entities/BotPhaseSimulation";
+import { BotOrderSimulation } from "@/database/entities/BotOrderSimulation";
 
 export async function getWorkerDetails(workerId: number, page: number = 1, limit: number = 10) {
   const db = await initializeDB();
-  const phaseRepo = db.getRepository(BotPhase);
-  const orderRepo = db.getRepository(BotOrder);
+  const workerRepo = db.getRepository(BotWorker);
+  const worker = await workerRepo.findOneBy({ id: workerId });
+
+  if (!worker) {
+    throw new Error("Worker not found");
+  }
+
+  let phaseRepo: Repository<BotPhase | BotPhaseSimulation> = db.getRepository(BotPhase);
+  let orderRepo: Repository<BotOrder | BotOrderSimulation> = db.getRepository(BotOrder);
+
+  if (worker.workerConfig.isSimulation) {
+    phaseRepo = db.getRepository(BotPhaseSimulation);
+    orderRepo = db.getRepository(BotOrderSimulation); // Assuming orders are stored in the same table for both real and simulation
 
   // Fetch paginated phases
   const [phases, total] = await phaseRepo.findAndCount({

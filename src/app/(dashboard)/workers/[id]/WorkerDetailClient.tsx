@@ -82,8 +82,8 @@ export default function WorkerDetailClient({ workerId, initialData }: { workerId
               <tr>
                 <th>Phase ID</th>
                 <th>Signal ID</th>
+                <th>Created / Updated</th>
                 <th>Status</th>
-                <th>Signal Detail</th>
               </tr>
             </thead>
             <tbody>
@@ -92,19 +92,27 @@ export default function WorkerDetailClient({ workerId, initialData }: { workerId
                   <tr style={{ cursor: "pointer", background: expandedPhaseId === phase.id ? "rgba(255,255,255,0.05)" : "transparent" }} onClick={() => setExpandedPhaseId(expandedPhaseId === phase.id ? null : phase.id)}>
                     <td><strong>{phase.id}</strong></td>
                     <td>{phase.signalId}</td>
-                    <td><span className={`status-badge status-${phase.status.toLowerCase()}`}>{phase.status}</span></td>
-                    <td>
-                      <div style={{ fontSize: "12px", maxWidth: "300px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-muted)" }} title={JSON.stringify(phase.signalConfig)}>
-                        {JSON.stringify(phase.signalConfig)}
-                      </div>
+                    <td style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                      <div>{new Date(Number(phase.createdAt)).toLocaleString()}</div>
+                      {phase.updatedAt ? <div>{new Date(Number(phase.updatedAt)).toLocaleString()}</div> : null}
                     </td>
+                    <td><span className={`status-badge status-${phase.status.toLowerCase()}`}>{phase.status}</span></td>
                   </tr>
                   {expandedPhaseId === phase.id && (
                     <tr>
                       <td colSpan={4} style={{ padding: 0, borderBottom: "1px solid var(--panel-border)", background: "rgba(0,0,0,0.2)" }}>
-                        <div style={{ padding: "16px 24px" }}>
-                          <h4 style={{ marginBottom: "12px", color: "var(--text-muted)" }}>Orders for Phase {phase.id}</h4>
-                          <table className="data-table" style={{ background: "transparent" }}>
+                        <div style={{ padding: "16px 24px", display: "flex", flexDirection: "column", gap: "24px" }}>
+                          
+                          <div>
+                            <h4 style={{ marginBottom: "12px", color: "var(--text-muted)" }}>Signal Detail</h4>
+                            <pre style={{ margin: 0, padding: "12px", background: "rgba(0,0,0,0.3)", borderRadius: "8px", overflowX: "auto", fontSize: "12px", color: "var(--text-primary)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                              {JSON.stringify(phase.signalConfig, null, 2)}
+                            </pre>
+                          </div>
+
+                          <div>
+                            <h4 style={{ marginBottom: "12px", color: "var(--text-muted)" }}>Orders for Phase {phase.id}</h4>
+                            <table className="data-table" style={{ background: "transparent" }}>
                             <thead>
                               <tr>
                                 <th>Order ID</th>
@@ -134,6 +142,7 @@ export default function WorkerDetailClient({ workerId, initialData }: { workerId
                               )}
                             </tbody>
                           </table>
+                          </div>
                         </div>
                       </td>
                     </tr>

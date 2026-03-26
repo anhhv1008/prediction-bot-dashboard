@@ -20,7 +20,6 @@ export async function GET(req: NextRequest) {
       req.signal.addEventListener("abort", async () => {
         await subscriber.unsubscribe();
         await subscriber.quit();
-        controller.close();
       });
     },
   });

@@ -83,7 +83,7 @@ export default function WorkerDetailClient({ workerId, initialData }: { workerId
                 <th>Phase ID</th>
                 <th>Signal ID</th>
                 <th>Status</th>
-                <th>Actions</th>
+                <th>Signal Detail</th>
               </tr>
             </thead>
             <tbody>
@@ -94,9 +94,9 @@ export default function WorkerDetailClient({ workerId, initialData }: { workerId
                     <td>{phase.signalId}</td>
                     <td><span className={`status-badge status-${phase.status.toLowerCase()}`}>{phase.status}</span></td>
                     <td>
-                      {phase.phaseConfig?.conditionId && (
-                         <a href={`https://polymarket.com/event/${phase.phaseConfig.conditionId}`} target="_blank" rel="noreferrer" className="std-button" style={{ fontSize: "12px", padding: "4px 8px" }} onClick={(e) => e.stopPropagation()}>View Market</a>
-                      )}
+                      <div style={{ fontSize: "12px", maxWidth: "300px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-muted)" }} title={JSON.stringify(phase.signalConfig)}>
+                        {JSON.stringify(phase.signalConfig)}
+                      </div>
                     </td>
                   </tr>
                   {expandedPhaseId === phase.id && (
@@ -109,8 +109,9 @@ export default function WorkerDetailClient({ workerId, initialData }: { workerId
                               <tr>
                                 <th>Order ID</th>
                                 <th>Side</th>
-                                <th>Price</th>
-                                <th>Quantity / Executed</th>
+                                <th>Executed Price</th>
+                                <th>Quantity / Exec / Recv</th>
+                                <th>Created / Executed</th>
                                 <th>Status</th>
                               </tr>
                             </thead>
@@ -119,13 +120,17 @@ export default function WorkerDetailClient({ workerId, initialData }: { workerId
                                 <tr key={order.id}>
                                   <td>{order.exchangeOrderId || order.id}</td>
                                   <td style={{ textTransform: "uppercase", color: order.side === "buy" ? "var(--success)" : "var(--danger)" }}>{order.side}</td>
-                                  <td>${order.price}</td>
-                                  <td>{order.quantity} / {order.executedQuantity || 0}</td>
+                                  <td>${order.executedPrice || "-"}</td>
+                                  <td>{order.quantity} / {order.executedQuantity || 0} / {order.receivedQuantity || 0}</td>
+                                  <td style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                                    <div>{new Date(Number(order.createdAt)).toLocaleString()}</div>
+                                    {order.executedAt ? <div>{new Date(Number(order.executedAt)).toLocaleString()}</div> : null}
+                                  </td>
                                   <td><span className={`status-badge status-${order.status.toLowerCase()}`}>{order.status}</span></td>
                                 </tr>
                               ))}
                               {(!phase.orders || phase.orders.length === 0) && (
-                                <tr><td colSpan={5} style={{ textAlign: "center" }}>No orders placed</td></tr>
+                                <tr><td colSpan={6} style={{ textAlign: "center" }}>No orders placed</td></tr>
                               )}
                             </tbody>
                           </table>

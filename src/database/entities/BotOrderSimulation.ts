@@ -129,15 +129,14 @@ export class BotOrderSimulation {
 
   @Column({
     name: "executed_at",
-    type: "bigint",
     nullable: true,
   })
   executedAt: number;
 
-  @Column({ name: "created_at", type: "bigint" })
+  @Column({ name: "created_at" })
   createdAt: number;
 
-  @Column({ name: "updated_at", type: "bigint" })
+  @Column({ name: "updated_at" })
   updatedAt: number;
 
   @ManyToOne(() => BotPhaseSimulation, (phase) => phase.orders)

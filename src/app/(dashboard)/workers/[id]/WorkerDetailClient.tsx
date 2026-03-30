@@ -8,7 +8,7 @@ export default function WorkerDetailClient({ workerId, initialData }: { workerId
   const searchParams = useSearchParams();
   const pathname = usePathname();
   
-  const { phases, dailyPnL, total } = initialData;
+  const { phases, dailyPnL, total, worker, mode } = initialData;
   const limit = 10;
   const currentPage = Number(searchParams.get("page")) || 1;
   const totalPages = Math.ceil(total / limit);
@@ -35,8 +35,80 @@ export default function WorkerDetailClient({ workerId, initialData }: { workerId
     router.push(`${pathname}?${params.toString()}`);
   };
 
+  const handleModeChange = (newMode: "real" | "simulation") => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("mode", newMode);
+    params.set("page", "1"); // Reset to page 1 on mode change
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  const isCurrentModeActive = (m: "real" | "simulation") => {
+    const currentIsSim = !!worker.workerConfig.isSimulation;
+    return (m === "simulation" && currentIsSim) || (m === "real" && !currentIsSim);
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      {/* Trading Mode & Config Info */}
+      <div className="glass-panel" style={{ padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderLeft: "4px solid var(--brand-primary)" }}>
+        <div style={{ display: "flex", gap: "24px", alignItems: "center" }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "1px" }}>Trading Mode</span>
+            <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+              <button 
+                onClick={() => handleModeChange("real")}
+                className="std-button"
+                style={{ 
+                  background: mode === "real" ? "var(--success)" : "rgba(255,255,255,0.05)",
+                  border: "1px solid " + (mode === "real" ? "var(--success)" : "var(--panel-border)"),
+                  color: mode === "real" ? "#000" : "var(--text-primary)",
+                  padding: "6px 16px",
+                  fontWeight: "bold",
+                  position: "relative"
+                }}
+              >
+                REAL
+              </button>
+              <button 
+                onClick={() => handleModeChange("simulation")}
+                className="std-button"
+                style={{ 
+                  background: mode === "simulation" ? "var(--success)" : "rgba(255,255,255,0.05)",
+                  border: "1px solid " + (mode === "simulation" ? "var(--success)" : "var(--panel-border)"),
+                  color: mode === "simulation" ? "#000" : "var(--text-primary)",
+                  padding: "6px 16px",
+                  fontWeight: "bold",
+                  position: "relative"
+                }}
+              >
+                SIMULATION
+              </button>
+            </div>
+          </div>
+
+          <div style={{ width: "1px", height: "40px", background: "var(--panel-border)" }}></div>
+
+          <div>
+             <span style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "1px" }}>Dynamic Trading</span>
+             <div style={{ marginTop: "8px", fontWeight: "bold", color: worker.workerConfig.enableDynamicTrading ? "var(--success)" : "var(--text-muted)" }}>
+                {worker.workerConfig.enableDynamicTrading ? "ENABLED" : "DISABLED"}
+                {worker.workerConfig.enableDynamicTrading && (
+                  <span style={{ marginLeft: "8px", fontSize: "12px", fontWeight: "normal", opacity: 0.8 }}>
+                    ({worker.workerConfig.dynamicTradingRotationTimes} wins to rotate)
+                  </span>
+                )}
+             </div>
+          </div>
+        </div>
+
+        <div style={{ textAlign: "right" }}>
+          <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Worker Config Status</span>
+          <div style={{ marginTop: "4px" }}>
+            <span className={`status-badge status-${worker.status.toLowerCase()}`}>{worker.status}</span>
+          </div>
+        </div>
+      </div>
+
       {/* Tabs */}
       <div style={{ display: "flex", gap: "16px", borderBottom: "1px solid var(--panel-border)", paddingBottom: "12px" }}>
         <button 
@@ -44,20 +116,20 @@ export default function WorkerDetailClient({ workerId, initialData }: { workerId
            style={{ background: activeTab === "pnl" ? "var(--brand-primary)" : "transparent", color: activeTab === "pnl" ? "#fff" : "var(--text-muted)", border: "1px solid var(--panel-border)" }}
            onClick={() => setActiveTab("pnl")}
         >
-          Daily PNL
+          Daily PNL ({mode.toUpperCase()})
         </button>
         <button 
            className="std-button"
            style={{ background: activeTab === "phases" ? "var(--brand-primary)" : "transparent", color: activeTab === "phases" ? "#fff" : "var(--text-muted)", border: "1px solid var(--panel-border)" }}
            onClick={() => setActiveTab("phases")}
         >
-          Order Phases
+          Order Phases ({mode.toUpperCase()})
         </button>
       </div>
 
       {activeTab === "pnl" && (
         <div className="glass-panel">
-          <h2>7-Day PNL Statistics</h2>
+          <h2>7-Day PNL Statistics ({mode === "real" ? "Real" : "Simulation"})</h2>
           <div style={{ display: "flex", gap: "16px", marginTop: "16px", flexWrap: "wrap", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
             {Object.entries(dailyPnL).map(([date, pnl]: any) => (
                <div key={date} style={{ padding: "16px", background: "var(--panel-bg)", borderRadius: "8px", border: "1px solid var(--panel-border)", minWidth: "150px", textAlign: "center" }}>
@@ -68,7 +140,7 @@ export default function WorkerDetailClient({ workerId, initialData }: { workerId
                </div>
             ))}
             {Object.keys(dailyPnL).length === 0 && (
-               <p style={{ color: "var(--text-muted)" }}>No PNL data in the last 7 days.</p>
+               <p style={{ color: "var(--text-muted)" }}>No PNL data in the last 7 days for this mode.</p>
             )}
           </div>
         </div>
@@ -76,7 +148,7 @@ export default function WorkerDetailClient({ workerId, initialData }: { workerId
 
       {activeTab === "phases" && (
         <div className="glass-panel">
-          <h2>Phases & Orders</h2>
+          <h2>Phases & Orders ({mode === "real" ? "Real" : "Simulation"})</h2>
           <table className="data-table" style={{ marginTop: "16px" }}>
             <thead>
               <tr>
@@ -150,7 +222,7 @@ export default function WorkerDetailClient({ workerId, initialData }: { workerId
                 </React.Fragment>
               ))}
               {phases.length === 0 && (
-                <tr><td colSpan={4} style={{ textAlign: "center" }}>No phases found.</td></tr>
+                <tr><td colSpan={4} style={{ textAlign: "center" }}>No phases found in this mode.</td></tr>
               )}
             </tbody>
           </table>

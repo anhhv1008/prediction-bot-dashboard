@@ -14,6 +14,7 @@ export async function getWorkerDetails(
   workerId: number,
   page: number = 1,
   limit: number = 10,
+  mode?: "real" | "simulation",
 ) {
   const db = await initializeDB();
   const workerRepo = db.getRepository(BotWorker);
@@ -23,15 +24,17 @@ export async function getWorkerDetails(
     throw new Error("Worker not found");
   }
 
-  let phaseRepo: Repository<BotPhase | BotPhaseSimulation> =
-    db.getRepository(BotPhase);
-  let orderRepo: Repository<BotOrder | BotOrderSimulation> =
-    db.getRepository(BotOrder);
+  // Determine which mode to use: requested mode or worker's current mode
+  const isSimulationMode = mode 
+    ? mode === "simulation" 
+    : !!worker.workerConfig.isSimulation;
 
-  if (worker.workerConfig.isSimulation) {
-    phaseRepo = db.getRepository(BotPhaseSimulation);
-    orderRepo = db.getRepository(BotOrderSimulation);
-  }
+  const phaseRepo: Repository<BotPhase | BotPhaseSimulation> = isSimulationMode
+    ? db.getRepository(BotPhaseSimulation)
+    : db.getRepository(BotPhase);
+  const orderRepo: Repository<BotOrder | BotOrderSimulation> = isSimulationMode
+    ? db.getRepository(BotOrderSimulation)
+    : db.getRepository(BotOrder);
 
   // Fetch paginated phases
   const [phases, total] = await phaseRepo.findAndCount({
@@ -86,5 +89,7 @@ export async function getWorkerDetails(
     phases: JSON.parse(JSON.stringify(phases)),
     total,
     dailyPnL,
+    worker: JSON.parse(JSON.stringify(worker)),
+    mode: isSimulationMode ? "simulation" : "real",
   };
 }

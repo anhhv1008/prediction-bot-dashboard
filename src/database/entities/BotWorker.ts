@@ -1,5 +1,5 @@
-import { Exchange, WorkerConfigStatus } from "@Types/Business";
-import type { BotWorkerConfig } from "@Types/Business";
+import { WorkerConfigStatus } from "@Types/Business";
+import type { BotWorkerConfig, BotWorkerState } from "@Types/Business";
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity("bot_workers")
@@ -26,6 +26,9 @@ export class BotWorker {
 
   @Column({ name: "worker_config", type: "json" })
   workerConfig: BotWorkerConfig;
+
+  @Column({ name: "worker_state", type: "json", nullable: true })
+  workerState: BotWorkerState;
 
   @Column({ name: "status", type: "varchar", enum: WorkerConfigStatus })
   status: WorkerConfigStatus;

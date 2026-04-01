@@ -412,6 +412,11 @@ export type RedeemParams = {
   redeemTokenSide?: TokenSide;
 };
 
+export type BotWorkerState = {
+  enableRealTrading?: boolean;
+  countingDynamicPhases?: number;
+};
+
 export type BotWorkerConfig = {
   maximumOpenPhases?: number;
   quantity?: string;

@@ -17,6 +17,7 @@ export async function getWorkers() {
     userId: config.userId,
     signalIds: config.signalIds,
     workerConfig: config.workerConfig,
+    workerState: config.workerState,
     status: config.status,
     createdAt: config.createdAt,
     updatedAt: config.updatedAt,

@@ -1,19 +1,32 @@
 "use client";
+import { WorkerConfigStatus, type BotWorkerConfig, type BotWorkerState } from "@Types/Business";
 
 import { useState } from "react";
 import { saveWorker, deleteWorker } from "./actions";
 import Link from "next/link";
 
-export default function WorkersClient({ initialWorkers }: { initialWorkers: any[] }) {
-  const [workers, setWorkers] = useState(initialWorkers);
-  const [editing, setEditing] = useState<any>(null);
+interface WorkerData {
+  id?: number;
+  walletExchangeApiId: number;
+  userId: number;
+  signalIds: number[] | string;
+  workerConfig: BotWorkerConfig | string;
+  workerState: BotWorkerState | string;
+  status: WorkerConfigStatus;
+  createdAt?: number;
+  updatedAt?: number;
+}
 
-  const handleEdit = (worker: any) => {
+export default function WorkersClient({ initialWorkers }: { initialWorkers: WorkerData[] }) {
+  const [workers, setWorkers] = useState(initialWorkers);
+  const [editing, setEditing] = useState<WorkerData | null>(null);
+
+  const handleEdit = (worker: WorkerData) => {
     setEditing(worker);
   };
 
   const handleCreate = () => {
-    setEditing({ walletExchangeApiId: 0, userId: 0, signalIds: [], workerConfig: {}, status: "active" });
+    setEditing({ walletExchangeApiId: 0, userId: 0, signalIds: [], workerConfig: {}, workerState: {}, status: WorkerConfigStatus.Active });
   };
 
   const handleDelete = async (id: number) => {
@@ -25,6 +38,7 @@ export default function WorkersClient({ initialWorkers }: { initialWorkers: any[
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!editing) return;
     try {
       const config = typeof editing.workerConfig === "string" 
           ? JSON.parse(editing.workerConfig) 
@@ -33,9 +47,14 @@ export default function WorkersClient({ initialWorkers }: { initialWorkers: any[
           ? editing.signalIds.split(",").map((s: string) => Number(s.trim()))
           : editing.signalIds;
       
-      await saveWorker({ ...editing, workerConfig: config, signalIds: signals });
+      const state = typeof editing.workerState === "string"
+          ? JSON.parse(editing.workerState)
+          : editing.workerState;
+      
+      await saveWorker({ ...editing, workerConfig: config, workerState: state, signalIds: signals } as any);
       window.location.reload();
     } catch (err) {
+      console.error(err);
       alert("Invalid JSON config or Signal IDs format.");
     }
   };
@@ -79,11 +98,11 @@ export default function WorkersClient({ initialWorkers }: { initialWorkers: any[
             <label>Status</label><br />
             <select 
               value={editing.status} 
-              onChange={(e) => setEditing({...editing, status: e.target.value})}
+              onChange={(e) => setEditing({...editing, status: e.target.value as WorkerConfigStatus})}
               className="login-input"
             >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value={WorkerConfigStatus.Active}>Active</option>
+              <option value={WorkerConfigStatus.Inactive}>Inactive</option>
             </select>
           </div>
           <div style={{ gridColumn: "1 / -1" }}>
@@ -91,6 +110,15 @@ export default function WorkersClient({ initialWorkers }: { initialWorkers: any[
             <textarea 
               value={typeof editing.workerConfig === "string" ? editing.workerConfig : JSON.stringify(editing.workerConfig, null, 2)}
               onChange={(e) => setEditing({...editing, workerConfig: e.target.value})}
+              className="login-input"
+              rows={8}
+            />
+          </div>
+          <div style={{ gridColumn: "1 / -1" }}>
+            <label>Worker State (JSON)</label><br />
+            <textarea 
+              value={typeof editing.workerState === "string" ? editing.workerState : JSON.stringify(editing.workerState, null, 2)}
+              onChange={(e) => setEditing({...editing, workerState: e.target.value})}
               className="login-input"
               rows={8}
             />
@@ -116,6 +144,7 @@ export default function WorkersClient({ initialWorkers }: { initialWorkers: any[
             <th>API Wallet ID</th>
             <th>User ID</th>
             <th>Signals</th>
+            <th>State</th>
             <th>Status</th>
             <th>Actions</th>
           </tr>
@@ -126,7 +155,13 @@ export default function WorkersClient({ initialWorkers }: { initialWorkers: any[
               <td>{w.id}</td>
               <td>{w.walletExchangeApiId}</td>
               <td>{w.userId}</td>
-              <td>{w.signalIds?.join(", ") || "-"}</td>
+              <td>{Array.isArray(w.signalIds) ? w.signalIds.join(", ") : (typeof w.signalIds === 'string' ? w.signalIds : "-")}</td>
+              <td>
+                <div style={{ fontSize: "12px", opacity: 0.8 }}>
+                  Real Trading: {(w.workerState as BotWorkerState)?.enableRealTrading ? "✅" : "❌"}<br />
+                  Phases: {(w.workerState as BotWorkerState)?.countingDynamicPhases || 0}
+                </div>
+              </td>
               <td>
                 <span className={`status-badge status-${w.status}`}>{w.status}</span>
               </td>
@@ -135,7 +170,7 @@ export default function WorkersClient({ initialWorkers }: { initialWorkers: any[
                   <button className="std-button" style={{ marginRight: "8px", padding: "4px 8px", background: "var(--success)" }}>View Details & PNL</button>
                 </Link>
                 <button onClick={() => handleEdit(w)} className="std-button" style={{ marginRight: "8px", padding: "4px 8px" }}>Edit</button>
-                <button onClick={() => handleDelete(w.id)} className="std-button" style={{ background: "var(--danger)", padding: "4px 8px" }}>Delete</button>
+                <button onClick={() => handleDelete(w.id!)} className="std-button" style={{ background: "var(--danger)", padding: "4px 8px" }}>Delete</button>
               </td>
             </tr>
           ))}

@@ -3,15 +3,19 @@
 import { initializeDB } from "@/database/DataSource";
 import { BotWorker } from "@/database/entities/BotWorker";
 import { publishEvent } from "@/lib/redis";
-import { RedisNotificationChannel, RedisNotificationEvent, WorkerConfigStatus } from "@Types/Business";
+import {
+  RedisNotificationChannel,
+  RedisNotificationEvent,
+  WorkerConfigStatus,
+} from "@Types/Business";
 import { revalidatePath } from "next/cache";
 
 export async function getWorkers() {
   const db = await initializeDB();
   const repo = db.getRepository(BotWorker);
   const configs = await repo.find({ order: { id: "DESC" } });
-  
-  return configs.map(config => ({
+
+  return configs.map((config) => ({
     id: config.id,
     walletExchangeApiId: config.walletExchangeApiId,
     userId: config.userId,
@@ -27,7 +31,7 @@ export async function getWorkers() {
 export async function saveWorker(data: Partial<BotWorker>) {
   const db = await initializeDB();
   const repo = db.getRepository(BotWorker);
-  
+
   let saved;
   const now = Date.now();
   if (data.id) {
@@ -48,10 +52,12 @@ export async function saveWorker(data: Partial<BotWorker>) {
   }
 
   if (saved) {
-     await publishEvent(RedisNotificationChannel.BotWorker, {
-       event: data.id ? RedisNotificationEvent.BotWorkerUpdated : RedisNotificationEvent.BotWorkerCreated,
-       data: saved
-     });
+    await publishEvent(RedisNotificationChannel.Business, {
+      event: data.id
+        ? RedisNotificationEvent.BotWorkerUpdated
+        : RedisNotificationEvent.BotWorkerCreated,
+      data: saved,
+    });
   }
 
   revalidatePath("/workers");
@@ -61,13 +67,13 @@ export async function saveWorker(data: Partial<BotWorker>) {
 export async function deleteWorker(id: number) {
   const db = await initializeDB();
   const repo = db.getRepository(BotWorker);
-  
+
   const existing = await repo.findOneBy({ id });
   if (existing) {
     await repo.remove(existing);
-    await publishEvent(RedisNotificationChannel.BotWorker, {
+    await publishEvent(RedisNotificationChannel.Business, {
       event: RedisNotificationEvent.BotWorkerDeleted,
-      data: { id }
+      data: id,
     });
   }
 

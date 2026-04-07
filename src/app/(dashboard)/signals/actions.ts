@@ -3,14 +3,20 @@
 import { initializeDB } from "@/database/DataSource";
 import { BotSignalConfig } from "@/database/entities/BotSignalConfig";
 import { publishEvent } from "@/lib/redis";
-import { RedisNotificationChannel, RedisNotificationEvent, SignalConfigStatus } from "@Types/Business";
+import {
+  RedisNotificationChannel,
+  RedisNotificationEvent,
+  SignalConfigStatus,
+} from "@Types/Business";
 import { revalidatePath } from "next/cache";
 
 export async function getSignals() {
   const db = await initializeDB();
-  const configs = await db.getRepository(BotSignalConfig).find({ order: { id: "DESC" } });
-  
-  return configs.map(config => ({
+  const configs = await db
+    .getRepository(BotSignalConfig)
+    .find({ order: { id: "DESC" } });
+
+  return configs.map((config) => ({
     id: config.id,
     name: config.name,
     indicator: config.indicator,
@@ -24,7 +30,7 @@ export async function getSignals() {
 export async function saveSignal(data: Partial<BotSignalConfig>) {
   const db = await initializeDB();
   const repo = db.getRepository(BotSignalConfig);
-  
+
   let saved;
   const now = Date.now();
   if (data.id) {
@@ -46,10 +52,12 @@ export async function saveSignal(data: Partial<BotSignalConfig>) {
 
   // Publish Redis Event to Bot
   if (saved) {
-     await publishEvent(RedisNotificationChannel.BotSignal, {
-       event: data.id ? RedisNotificationEvent.BotSignalConfigUpdated : RedisNotificationEvent.BotSignalConfigCreated,
-       data: saved
-     });
+    await publishEvent(RedisNotificationChannel.Business, {
+      event: data.id
+        ? RedisNotificationEvent.BotSignalConfigUpdated
+        : RedisNotificationEvent.BotSignalConfigCreated,
+      data: saved,
+    });
   }
 
   revalidatePath("/signals");
@@ -59,13 +67,13 @@ export async function saveSignal(data: Partial<BotSignalConfig>) {
 export async function deleteSignal(id: number) {
   const db = await initializeDB();
   const repo = db.getRepository(BotSignalConfig);
-  
+
   const existing = await repo.findOneBy({ id });
   if (existing) {
     await repo.remove(existing);
-    await publishEvent(RedisNotificationChannel.BotSignal, {
+    await publishEvent(RedisNotificationChannel.Business, {
       event: RedisNotificationEvent.BotSignalConfigDeleted,
-      data: { id }
+      data: id,
     });
   }
 
